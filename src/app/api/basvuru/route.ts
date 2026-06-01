@@ -1,6 +1,7 @@
 import { put } from "@vercel/blob"
 import { NextRequest, NextResponse } from "next/server"
 import { parseReferences } from "@/lib/parse-form-refs"
+import { formatApplicationErrors } from "@/lib/format-validation-errors"
 import { applicationSchema, prepareReferences } from "@/lib/validation"
 import { cvFileErrorMessage, getCvExtension } from "@/lib/cv-file"
 
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!parsed.success) {
-      const errors = parsed.error.issues.map((i) => i.message)
+      const errors = formatApplicationErrors(parsed.error)
       return NextResponse.json(
         {
           error: errors[0] ?? "Form doğrulama hatası",
@@ -106,8 +107,19 @@ export async function POST(request: NextRequest) {
 
     const payload = {
       id: externalId,
-      ...data,
+      fullName: data.fullName,
+      residence: data.residence,
+      birthYear: data.birthYear,
+      phone: data.phone,
+      universityDepartment: data.universityDepartment,
+      formationStatus: data.formationStatus,
+      appliedBranch: data.appliedBranch,
+      experienceLevels: data.experienceLevels,
+      totalExperience: data.totalExperience,
       hasPrivateSchoolExperience: data.hasPrivateSchoolExperience === "Evet",
+      pedagogicalApproach: data.pedagogicalApproach,
+      clubsAndActivities: data.clubsAndActivities,
+      references: data.references,
       cvUrl: blob.url,
       cvFileName: cvFile.name,
       createdAt,
@@ -124,10 +136,30 @@ export async function POST(request: NextRequest) {
     })
 
     if (!webhookRes.ok) {
-      const errBody = await webhookRes.json().catch(() => ({}))
+      const errBody = (await webhookRes.json().catch(() => ({}))) as {
+        error?: string
+        message?: string
+      }
       console.error("[IK Basvuru] Webhook hatası:", webhookRes.status, errBody)
+
+      let userMessage = "Başvurunuz kaydedilemedi. Lütfen bir süre sonra tekrar deneyin."
+      if (webhookRes.status === 401) {
+        userMessage =
+          "Sistem yapılandırma hatası (güvenlik anahtarı). Lütfen İnsan Kaynakları ile iletişime geçin."
+      } else if (webhookRes.status === 400) {
+        userMessage =
+          "Başvuru verileri sunucuda kabul edilmedi. Referansları tam doldurun veya boş bırakın; sorun sürerse İK ile iletişime geçin."
+      } else if (webhookRes.status >= 500) {
+        userMessage =
+          "Kayıt sunucusu geçici olarak kullanılamıyor. Lütfen daha sonra tekrar deneyin veya İK ile iletişime geçin."
+      }
+
       return NextResponse.json(
-        { error: "Başvurunuz kaydedilemedi. Lütfen tekrar deneyin." },
+        {
+          error: userMessage,
+          webhookStatus: webhookRes.status,
+          webhookDetail: errBody.error ?? errBody.message,
+        },
         { status: 502 }
       )
     }
