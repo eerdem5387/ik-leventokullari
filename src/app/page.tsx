@@ -9,7 +9,7 @@ export default function HomePage() {
             <p className="text-xs font-semibold uppercase tracking-widest text-[#c8a96e]">
               Levent Okulları
             </p>
-            <h1 className="text-xl font-bold text-[#1e3a5f] sm:text-2xl">Öğretmen Başvuru Formu</h1>
+            <h1 className="text-xl font-bold text-[#1e3a5f] sm:text-2xl">İş Başvuru Formu</h1>
           </div>
         </div>
       </header>
@@ -17,9 +17,9 @@ export default function HomePage() {
       <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
         <div className="mb-8 rounded-2xl bg-[#1e3a5f] p-6 text-white shadow-lg sm:p-8">
           <p className="text-sm leading-relaxed text-blue-100/95">
-            Levent Okulları bünyesinde görev almak isteyen öğretmen adaylarının başvuru formudur.
-            Tüm alanların eksiksiz doldurulması gerekmektedir. Başvurunuz İnsan Kaynakları ekibimiz
-            tarafından değerlendirilecektir.
+            Levent Okulları bünyesindeki açık pozisyonlar için iş başvuru formudur. Zorunlu
+            alanları eksiksiz doldurun; başvurunuz İnsan Kaynakları ekibimiz tarafından
+            değerlendirilecektir.
           </p>
         </div>
 

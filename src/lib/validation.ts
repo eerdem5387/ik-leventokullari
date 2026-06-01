@@ -6,6 +6,11 @@ import {
   GRADE_LEVEL_OPTIONS,
   PRIVATE_SCHOOL_OPTIONS,
 } from "./constants"
+import {
+  type ReferenceInput,
+  sanitizeReferences,
+  validateOptionalReferences,
+} from "./references"
 
 function phoneDigits(value: string): number {
   return value.replace(/\D/g, "").length
@@ -16,11 +21,11 @@ const phoneSchema = z
   .trim()
   .refine((v) => phoneDigits(v) >= 10, "Geçerli bir telefon numarası girin (en az 10 rakam)")
 
-const referenceSchema = z.object({
-  firstName: z.string().trim().min(2, "Referans adı en az 2 karakter olmalı"),
-  lastName: z.string().trim().min(2, "Referans soyadı en az 2 karakter olmalı"),
-  title: z.string().trim().min(2, "Referans unvanı zorunludur"),
-  phone: phoneSchema,
+const referenceEntrySchema = z.object({
+  firstName: z.string().trim(),
+  lastName: z.string().trim(),
+  title: z.string().trim(),
+  phone: z.string().trim(),
 })
 
 export const applicationSchema = z.object({
@@ -50,9 +55,18 @@ export const applicationSchema = z.object({
     .string()
     .trim()
     .min(5, "Kulüp / sosyal faaliyet alanı zorunludur"),
-  references: z.array(referenceSchema).min(2, "En az 2 referans girin"),
+  references: z.array(referenceEntrySchema),
   kvkkAccepted: z.literal(true, { error: "KVKK onayı zorunludur" }),
 })
 
 export type ApplicationFormData = z.infer<typeof applicationSchema>
-export type ReferenceInput = z.infer<typeof referenceSchema>
+
+/** Referansları temizler, kısmi doldurma hatasını döner */
+export function prepareReferences(raw: ReferenceInput[]): {
+  references: ReferenceInput[]
+  error: string | null
+} {
+  const sanitized = sanitizeReferences(raw)
+  const error = validateOptionalReferences(sanitized)
+  return { references: sanitized, error }
+}

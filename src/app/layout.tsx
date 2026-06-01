@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Öğretmen Başvurusu | Levent Okulları",
-  description: "Levent Okulları öğretmen adayı başvuru formu",
+  title: "İş Başvuru Formu | Levent Okulları",
+  description: "Levent Okulları iş başvuru formu",
 }
 
 export default function RootLayout({

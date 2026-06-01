@@ -1,6 +1,7 @@
 import { put } from "@vercel/blob"
 import { NextRequest, NextResponse } from "next/server"
-import { applicationSchema } from "@/lib/validation"
+import { parseReferences } from "@/lib/parse-form-refs"
+import { applicationSchema, prepareReferences } from "@/lib/validation"
 import { cvFileErrorMessage, getCvExtension } from "@/lib/cv-file"
 
 export const runtime = "nodejs"
@@ -9,15 +10,6 @@ function parseBirthYear(raw: FormDataEntryValue | null): number | null {
   if (raw == null || raw === "") return null
   const n = parseInt(String(raw), 10)
   return Number.isFinite(n) ? n : null
-}
-
-function parseReferences(raw: FormDataEntryValue | null) {
-  if (!raw || typeof raw !== "string") return null
-  try {
-    return JSON.parse(raw) as unknown
-  } catch {
-    return null
-  }
 }
 
 function parseExperienceLevels(raw: FormDataEntryValue | null): string[] {
@@ -44,6 +36,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: cvError }, { status: 400 })
     }
 
+    const rawRefs = parseReferences(formData.get("references"))
+    const { references, error: refError } = prepareReferences(rawRefs)
+    if (refError) {
+      return NextResponse.json({ error: refError }, { status: 400 })
+    }
+
     const parsed = applicationSchema.safeParse({
       fullName: formData.get("fullName"),
       residence: formData.get("residence"),
@@ -57,7 +55,7 @@ export async function POST(request: NextRequest) {
       hasPrivateSchoolExperience: formData.get("hasPrivateSchoolExperience"),
       pedagogicalApproach: formData.get("pedagogicalApproach"),
       clubsAndActivities: formData.get("clubsAndActivities"),
-      references: parseReferences(formData.get("references")),
+      references,
       kvkkAccepted: formData.get("kvkkAccepted") === "true",
     })
 
