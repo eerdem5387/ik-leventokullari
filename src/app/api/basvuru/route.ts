@@ -1,7 +1,7 @@
 import { put } from "@vercel/blob"
 import { NextRequest, NextResponse } from "next/server"
-import { ALLOWED_CV_TYPES, MAX_CV_BYTES } from "@/lib/constants"
 import { applicationSchema } from "@/lib/validation"
+import { cvFileErrorMessage, getCvExtension } from "@/lib/cv-file"
 
 export const runtime = "nodejs"
 
@@ -35,19 +35,13 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const cvFile = formData.get("cv")
 
-    if (!(cvFile instanceof File) || cvFile.size === 0) {
+    if (!(cvFile instanceof File)) {
       return NextResponse.json({ error: "CV dosyası zorunludur" }, { status: 400 })
     }
 
-    if (cvFile.size > MAX_CV_BYTES) {
-      return NextResponse.json({ error: "CV dosyası en fazla 5 MB olabilir" }, { status: 400 })
-    }
-
-    if (!ALLOWED_CV_TYPES.includes(cvFile.type as (typeof ALLOWED_CV_TYPES)[number])) {
-      return NextResponse.json(
-        { error: "CV yalnızca PDF veya Word (.doc, .docx) formatında olabilir" },
-        { status: 400 }
-      )
+    const cvError = cvFileErrorMessage(cvFile)
+    if (cvError) {
+      return NextResponse.json({ error: cvError }, { status: 400 })
     }
 
     const parsed = applicationSchema.safeParse({
@@ -68,9 +62,12 @@ export async function POST(request: NextRequest) {
     })
 
     if (!parsed.success) {
-      const first = parsed.error.issues[0]
+      const errors = parsed.error.issues.map((i) => i.message)
       return NextResponse.json(
-        { error: first?.message ?? "Form doğrulama hatası" },
+        {
+          error: errors[0] ?? "Form doğrulama hatası",
+          errors,
+        },
         { status: 400 }
       )
     }
@@ -82,10 +79,20 @@ export async function POST(request: NextRequest) {
     const safeName = cvFile.name.replace(/[^a-zA-Z0-9._-]/g, "_")
     const blobPath = `ik-basvuru/${externalId}/${safeName}`
 
+    const ext = getCvExtension(cvFile.name)
+    const contentType =
+      cvFile.type && cvFile.type !== "application/octet-stream"
+        ? cvFile.type
+        : ext === ".pdf"
+          ? "application/pdf"
+          : ext === ".docx"
+            ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            : "application/msword"
+
     const blob = await put(blobPath, cvFile, {
       access: "public",
       addRandomSuffix: false,
-      contentType: cvFile.type,
+      contentType,
     })
 
     const webhookUrl = process.env.YONETIM_WEBHOOK_URL

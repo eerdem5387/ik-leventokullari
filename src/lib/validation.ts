@@ -7,11 +7,20 @@ import {
   PRIVATE_SCHOOL_OPTIONS,
 } from "./constants"
 
+function phoneDigits(value: string): number {
+  return value.replace(/\D/g, "").length
+}
+
+const phoneSchema = z
+  .string()
+  .trim()
+  .refine((v) => phoneDigits(v) >= 10, "Geçerli bir telefon numarası girin (en az 10 rakam)")
+
 const referenceSchema = z.object({
-  firstName: z.string().trim().min(2, "Ad en az 2 karakter olmalı"),
-  lastName: z.string().trim().min(2, "Soyad en az 2 karakter olmalı"),
-  title: z.string().trim().min(2, "Unvan zorunludur"),
-  phone: z.string().trim().min(10, "Geçerli bir telefon numarası girin"),
+  firstName: z.string().trim().min(2, "Referans adı en az 2 karakter olmalı"),
+  lastName: z.string().trim().min(2, "Referans soyadı en az 2 karakter olmalı"),
+  title: z.string().trim().min(2, "Referans unvanı zorunludur"),
+  phone: phoneSchema,
 })
 
 export const applicationSchema = z.object({
@@ -22,7 +31,7 @@ export const applicationSchema = z.object({
     .int()
     .min(1950, "Geçerli bir doğum yılı girin")
     .max(new Date().getFullYear() - 18, "18 yaşından büyük olmalısınız"),
-  phone: z.string().trim().min(10, "İletişim numarası zorunludur"),
+  phone: phoneSchema,
   universityDepartment: z.string().trim().min(3, "Üniversite ve bölüm zorunludur"),
   formationStatus: z.enum(FORMATION_OPTIONS, { error: "Formasyon durumu seçin" }),
   appliedBranch: z.enum(BRANCH_OPTIONS, { error: "Branş seçin" }),
@@ -36,11 +45,11 @@ export const applicationSchema = z.object({
   pedagogicalApproach: z
     .string()
     .trim()
-    .min(20, "Pedagojik yaklaşım alanı en az 20 karakter olmalı"),
+    .min(10, "Pedagojik yaklaşım alanı en az 10 karakter olmalı"),
   clubsAndActivities: z
     .string()
     .trim()
-    .min(10, "Kulüp / sosyal faaliyet alanı zorunludur"),
+    .min(5, "Kulüp / sosyal faaliyet alanı zorunludur"),
   references: z.array(referenceSchema).min(2, "En az 2 referans girin"),
   kvkkAccepted: z.literal(true, { error: "KVKK onayı zorunludur" }),
 })

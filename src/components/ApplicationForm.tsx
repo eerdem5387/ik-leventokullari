@@ -8,6 +8,7 @@ import {
   GRADE_LEVEL_OPTIONS,
   PRIVATE_SCHOOL_OPTIONS,
 } from "@/lib/constants"
+import { cvFileErrorMessage } from "@/lib/cv-file"
 import type { ReferenceInput } from "@/lib/validation"
 
 const emptyReference = (): ReferenceInput => ({
@@ -59,8 +60,19 @@ export function ApplicationForm() {
     e.preventDefault()
     setError(null)
 
-    if (!cvFile) {
-      setError("CV dosyası zorunludur")
+    if (experienceLevels.length === 0) {
+      setError("En az bir kademe (Ortaokul veya Lise) seçmelisiniz")
+      return
+    }
+
+    const cvErr = cvFileErrorMessage(cvFile)
+    if (cvErr) {
+      setError(cvErr)
+      return
+    }
+
+    if (!kvkkAccepted) {
+      setError("KVKK onayını işaretlemelisiniz")
       return
     }
 
@@ -79,14 +91,21 @@ export function ApplicationForm() {
     formData.append("clubsAndActivities", clubsAndActivities)
     formData.append("references", JSON.stringify(references))
     formData.append("kvkkAccepted", kvkkAccepted ? "true" : "false")
-    formData.append("cv", cvFile)
+    formData.append("cv", cvFile!)
 
     setSubmitting(true)
     try {
       const res = await fetch("/api/basvuru", { method: "POST", body: formData })
-      const data = await res.json().catch(() => ({}))
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string
+        errors?: string[]
+      }
       if (!res.ok) {
-        throw new Error(data.error || "Başvuru gönderilemedi")
+        const msg =
+          Array.isArray(data.errors) && data.errors.length > 0
+            ? data.errors.join(" • ")
+            : data.error || "Başvuru gönderilemedi"
+        throw new Error(msg)
       }
       setSuccess(true)
       window.scrollTo({ top: 0, behavior: "smooth" })
@@ -118,8 +137,12 @@ export function ApplicationForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-10">
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {error}
+        <div
+          className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800"
+          role="alert"
+        >
+          <p className="font-semibold">Başvuru gönderilemedi</p>
+          <p className="mt-1">{error}</p>
         </div>
       )}
 
