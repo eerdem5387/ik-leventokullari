@@ -1,8 +1,8 @@
 import { put } from "@vercel/blob"
 import { NextRequest, NextResponse } from "next/server"
-import { parseReferences } from "@/lib/parse-form-refs"
+import { parseWorkHistory } from "@/lib/parse-work-history"
 import { formatApplicationErrors } from "@/lib/format-validation-errors"
-import { applicationSchema, prepareReferences } from "@/lib/validation"
+import { applicationSchema, prepareWorkHistory } from "@/lib/validation"
 import { cvFileErrorMessage, getCvExtension } from "@/lib/cv-file"
 
 export const runtime = "nodejs"
@@ -13,7 +13,7 @@ function parseBirthYear(raw: FormDataEntryValue | null): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-function parseExperienceLevels(raw: FormDataEntryValue | null): string[] {
+function parseStringArray(raw: FormDataEntryValue | null): string[] {
   if (!raw || typeof raw !== "string") return []
   try {
     const parsed = JSON.parse(raw) as unknown
@@ -37,10 +37,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: cvError }, { status: 400 })
     }
 
-    const rawRefs = parseReferences(formData.get("references"))
-    const { references, error: refError } = prepareReferences(rawRefs)
-    if (refError) {
-      return NextResponse.json({ error: refError }, { status: 400 })
+    const rawHistory = parseWorkHistory(formData.get("workHistory"))
+    const { workHistory, error: historyError } = prepareWorkHistory(rawHistory)
+    if (historyError) {
+      return NextResponse.json({ error: historyError }, { status: 400 })
     }
 
     const parsed = applicationSchema.safeParse({
@@ -51,12 +51,11 @@ export async function POST(request: NextRequest) {
       universityDepartment: formData.get("universityDepartment"),
       formationStatus: formData.get("formationStatus"),
       appliedBranch: formData.get("appliedBranch"),
-      experienceLevels: parseExperienceLevels(formData.get("experienceLevels")),
+      experienceLevels: parseStringArray(formData.get("experienceLevels")),
       totalExperience: formData.get("totalExperience"),
       hasPrivateSchoolExperience: formData.get("hasPrivateSchoolExperience"),
-      pedagogicalApproach: formData.get("pedagogicalApproach"),
-      clubsAndActivities: formData.get("clubsAndActivities"),
-      references,
+      clubsAndActivities: parseStringArray(formData.get("clubsAndActivities")),
+      workHistory,
       kvkkAccepted: formData.get("kvkkAccepted") === "true",
     })
 
@@ -117,9 +116,8 @@ export async function POST(request: NextRequest) {
       experienceLevels: data.experienceLevels,
       totalExperience: data.totalExperience,
       hasPrivateSchoolExperience: data.hasPrivateSchoolExperience === "Evet",
-      pedagogicalApproach: data.pedagogicalApproach,
       clubsAndActivities: data.clubsAndActivities,
-      references: data.references,
+      workHistory: data.workHistory,
       cvUrl: blob.url,
       cvFileName: cvFile.name,
       createdAt,
@@ -148,7 +146,7 @@ export async function POST(request: NextRequest) {
           "Sistem yapılandırma hatası (güvenlik anahtarı). Lütfen İnsan Kaynakları ile iletişime geçin."
       } else if (webhookRes.status === 400) {
         userMessage =
-          "Başvuru verileri sunucuda kabul edilmedi. Referansları tam doldurun veya boş bırakın; sorun sürerse İK ile iletişime geçin."
+          "Başvuru verileri sunucuda kabul edilmedi. Çalışma geçmişini tam doldurun veya boş bırakın; sorun sürerse İK ile iletişime geçin."
       } else if (webhookRes.status >= 500) {
         userMessage =
           "Kayıt sunucusu geçici olarak kullanılamıyor. Lütfen daha sonra tekrar deneyin veya İK ile iletişime geçin."

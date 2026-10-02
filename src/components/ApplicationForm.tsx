@@ -3,21 +3,21 @@
 import { useState } from "react"
 import {
   BRANCH_OPTIONS,
+  CLUB_OPTIONS,
   EXPERIENCE_OPTIONS,
   FORMATION_OPTIONS,
   GRADE_LEVEL_OPTIONS,
   PRIVATE_SCHOOL_OPTIONS,
 } from "@/lib/constants"
 import { cvFileErrorMessage } from "@/lib/cv-file"
-import type { ReferenceInput } from "@/lib/references"
-import { prepareReferences } from "@/lib/validation"
+import type { WorkHistoryInput } from "@/lib/work-history"
+import { prepareWorkHistory } from "@/lib/validation"
 import { SubmitResultScreen } from "./SubmitResultScreen"
 
-const emptyReference = (): ReferenceInput => ({
-  firstName: "",
-  lastName: "",
-  title: "",
+const emptyWorkHistory = (): WorkHistoryInput => ({
+  institutionName: "",
   phone: "",
+  directorName: "",
 })
 
 type SubmitOverlay = null | { type: "loading" | "success" | "error"; message?: string }
@@ -33,12 +33,8 @@ export function ApplicationForm() {
   const [experienceLevels, setExperienceLevels] = useState<string[]>([])
   const [totalExperience, setTotalExperience] = useState("")
   const [hasPrivateSchoolExperience, setHasPrivateSchoolExperience] = useState("")
-  const [pedagogicalApproach, setPedagogicalApproach] = useState("")
-  const [clubsAndActivities, setClubsAndActivities] = useState("")
-  const [references, setReferences] = useState<ReferenceInput[]>([
-    emptyReference(),
-    emptyReference(),
-  ])
+  const [clubsAndActivities, setClubsAndActivities] = useState<string[]>([])
+  const [workHistory, setWorkHistory] = useState<WorkHistoryInput[]>([emptyWorkHistory()])
   const [cvFile, setCvFile] = useState<File | null>(null)
   const [kvkkAccepted, setKvkkAccepted] = useState(false)
 
@@ -50,12 +46,26 @@ export function ApplicationForm() {
     )
   }
 
-  const updateReference = (index: number, field: keyof ReferenceInput, value: string) => {
-    setReferences((prev) => {
+  const toggleClub = (club: string) => {
+    setClubsAndActivities((prev) =>
+      prev.includes(club) ? prev.filter((c) => c !== club) : [...prev, club]
+    )
+  }
+
+  const updateWorkHistory = (
+    index: number,
+    field: keyof WorkHistoryInput,
+    value: string
+  ) => {
+    setWorkHistory((prev) => {
       const next = [...prev]
       next[index] = { ...next[index], [field]: value }
       return next
     })
+  }
+
+  const removeWorkHistory = (index: number) => {
+    setWorkHistory((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)))
   }
 
   const resetForm = () => {
@@ -69,9 +79,8 @@ export function ApplicationForm() {
     setExperienceLevels([])
     setTotalExperience("")
     setHasPrivateSchoolExperience("")
-    setPedagogicalApproach("")
-    setClubsAndActivities("")
-    setReferences([emptyReference(), emptyReference()])
+    setClubsAndActivities([])
+    setWorkHistory([emptyWorkHistory()])
     setCvFile(null)
     setKvkkAccepted(false)
   }
@@ -93,6 +102,14 @@ export function ApplicationForm() {
       return
     }
 
+    if (clubsAndActivities.length === 0) {
+      setOverlay({
+        type: "error",
+        message: "En az bir kulüp veya sosyal faaliyet seçmelisiniz.",
+      })
+      return
+    }
+
     const cvErr = cvFileErrorMessage(cvFile)
     if (cvErr) {
       setOverlay({ type: "error", message: cvErr })
@@ -104,9 +121,9 @@ export function ApplicationForm() {
       return
     }
 
-    const { references: cleanRefs, error: refError } = prepareReferences(references)
-    if (refError) {
-      setOverlay({ type: "error", message: refError })
+    const { workHistory: cleanHistory, error: historyError } = prepareWorkHistory(workHistory)
+    if (historyError) {
+      setOverlay({ type: "error", message: historyError })
       return
     }
 
@@ -121,9 +138,8 @@ export function ApplicationForm() {
     formData.append("experienceLevels", JSON.stringify(experienceLevels))
     formData.append("totalExperience", totalExperience)
     formData.append("hasPrivateSchoolExperience", hasPrivateSchoolExperience)
-    formData.append("pedagogicalApproach", pedagogicalApproach)
-    formData.append("clubsAndActivities", clubsAndActivities)
-    formData.append("references", JSON.stringify(cleanRefs))
+    formData.append("clubsAndActivities", JSON.stringify(clubsAndActivities))
+    formData.append("workHistory", JSON.stringify(cleanHistory))
     formData.append("kvkkAccepted", kvkkAccepted ? "true" : "false")
     formData.append("cv", cvFile!)
 
@@ -327,71 +343,76 @@ export function ApplicationForm() {
         </section>
 
         <section className="space-y-5">
-          <SectionTitle>Pedagojik Yaklaşım ve Eğitim Teknolojileri</SectionTitle>
-          <Field label="Pedagojik yaklaşım ve eğitim teknolojileri *">
-            <textarea
-              required
-              rows={4}
-              className={inputClass}
-              value={pedagogicalApproach}
-              onChange={(e) => setPedagogicalApproach(e.target.value)}
-              placeholder="Sınıf yönetimi, dijital araçlar, ölçme-değerlendirme vb."
-            />
-          </Field>
+          <SectionTitle>Kulüp ve Sosyal Faaliyetler</SectionTitle>
           <Field label="Yürütebileceğiniz kulüp veya sosyal faaliyetler *">
-            <textarea
-              required
-              rows={3}
-              className={inputClass}
-              value={clubsAndActivities}
-              onChange={(e) => setClubsAndActivities(e.target.value)}
-              placeholder="Örn: Robotik Kodlama, Satranç, Tiyatro..."
-            />
+            <div className="mt-2 flex flex-wrap gap-3">
+              {CLUB_OPTIONS.map((club) => (
+                <label
+                  key={club}
+                  className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 has-[:checked]:border-[#1e3a5f] has-[:checked]:bg-[#1e3a5f]/5"
+                >
+                  <input
+                    type="checkbox"
+                    checked={clubsAndActivities.includes(club)}
+                    onChange={() => toggleClub(club)}
+                  />
+                  <span className="text-sm font-medium text-slate-800">{club}</span>
+                </label>
+              ))}
+            </div>
           </Field>
         </section>
 
         <section className="space-y-5">
-          <SectionTitle>Referanslar (isteğe bağlı)</SectionTitle>
+          <SectionTitle>Çalışma Geçmişi</SectionTitle>
           <p className="text-sm text-slate-600">
-            Doldurmak zorunda değilsiniz. Bir referans kartına başladıysanız o karttaki tüm
-            alanları eksiksiz doldurun.
+            Daha önce çalıştığınız kurumları ekleyebilirsiniz. Yeni mezunsanız boş
+            bırakabilirsiniz. Bir kurum kartına başladıysanız tüm alanları eksiksiz doldurun.
           </p>
           <div className="space-y-6">
-            {references.map((ref, index) => (
+            {workHistory.map((entry, index) => (
               <div
                 key={index}
                 className="rounded-xl border border-slate-200 bg-slate-50/80 p-5 space-y-4"
               >
-                <p className="text-sm font-semibold text-[#1e3a5f]">Referans {index + 1}</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-[#1e3a5f]">Kurum {index + 1}</p>
+                  {workHistory.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeWorkHistory(index)}
+                      className="text-sm font-medium text-slate-500 hover:text-red-600"
+                    >
+                      Kaldır
+                    </button>
+                  )}
+                </div>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Ad">
+                  <Field label="Kurum adı">
                     <input
                       className={inputClass}
-                      value={ref.firstName}
-                      onChange={(e) => updateReference(index, "firstName", e.target.value)}
+                      value={entry.institutionName}
+                      onChange={(e) =>
+                        updateWorkHistory(index, "institutionName", e.target.value)
+                      }
+                      placeholder="Örn: Levent Okulları"
                     />
                   </Field>
-                  <Field label="Soyad">
-                    <input
-                      className={inputClass}
-                      value={ref.lastName}
-                      onChange={(e) => updateReference(index, "lastName", e.target.value)}
-                    />
-                  </Field>
-                  <Field label="Unvan">
-                    <input
-                      className={inputClass}
-                      value={ref.title}
-                      onChange={(e) => updateReference(index, "title", e.target.value)}
-                      placeholder="Örn: Okul Müdürü"
-                    />
-                  </Field>
-                  <Field label="İletişim numarası">
+                  <Field label="Telefon numarası">
                     <input
                       type="tel"
                       className={inputClass}
-                      value={ref.phone}
-                      onChange={(e) => updateReference(index, "phone", e.target.value)}
+                      value={entry.phone}
+                      onChange={(e) => updateWorkHistory(index, "phone", e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Kurum müdürü">
+                    <input
+                      className={inputClass}
+                      value={entry.directorName}
+                      onChange={(e) =>
+                        updateWorkHistory(index, "directorName", e.target.value)
+                      }
                     />
                   </Field>
                 </div>
@@ -400,10 +421,10 @@ export function ApplicationForm() {
           </div>
           <button
             type="button"
-            onClick={() => setReferences((prev) => [...prev, emptyReference()])}
+            onClick={() => setWorkHistory((prev) => [...prev, emptyWorkHistory()])}
             className="text-sm font-medium text-[#1e3a5f] hover:underline"
           >
-            + Bir referans daha ekle
+            + Kurum Ekle
           </button>
         </section>
 
@@ -443,7 +464,11 @@ export function ApplicationForm() {
 
         <button
           type="submit"
-          disabled={overlay?.type === "loading" || experienceLevels.length === 0}
+          disabled={
+            overlay?.type === "loading" ||
+            experienceLevels.length === 0 ||
+            clubsAndActivities.length === 0
+          }
           className="w-full rounded-xl bg-[#1e3a5f] px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-[#152a45] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[240px]"
         >
           {overlay?.type === "loading" ? "Gönderiliyor..." : "Başvuruyu Gönder"}

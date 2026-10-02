@@ -1,16 +1,17 @@
 import { z } from "zod"
 import {
   BRANCH_OPTIONS,
+  CLUB_OPTIONS,
   EXPERIENCE_OPTIONS,
   FORMATION_OPTIONS,
   GRADE_LEVEL_OPTIONS,
   PRIVATE_SCHOOL_OPTIONS,
 } from "./constants"
 import {
-  type ReferenceInput,
-  sanitizeReferences,
-  validateOptionalReferences,
-} from "./references"
+  type WorkHistoryInput,
+  sanitizeWorkHistory,
+  validateOptionalWorkHistory,
+} from "./work-history"
 
 function phoneDigits(value: string): number {
   return value.replace(/\D/g, "").length
@@ -21,11 +22,10 @@ const phoneSchema = z
   .trim()
   .refine((v) => phoneDigits(v) >= 10, "Geçerli bir telefon numarası girin (en az 10 rakam)")
 
-const referenceEntrySchema = z.object({
-  firstName: z.string().trim(),
-  lastName: z.string().trim(),
-  title: z.string().trim(),
+const workHistoryEntrySchema = z.object({
+  institutionName: z.string().trim(),
   phone: z.string().trim(),
+  directorName: z.string().trim(),
 })
 
 export const applicationSchema = z.object({
@@ -47,26 +47,21 @@ export const applicationSchema = z.object({
   hasPrivateSchoolExperience: z.enum(PRIVATE_SCHOOL_OPTIONS, {
     error: "Özel okul deneyimi seçin",
   }),
-  pedagogicalApproach: z
-    .string()
-    .trim()
-    .min(10, "Pedagojik yaklaşım alanı en az 10 karakter olmalı"),
   clubsAndActivities: z
-    .string()
-    .trim()
-    .min(5, "Kulüp / sosyal faaliyet alanı zorunludur"),
-  references: z.array(referenceEntrySchema),
+    .array(z.enum(CLUB_OPTIONS))
+    .min(1, "En az bir kulüp veya sosyal faaliyet seçin"),
+  workHistory: z.array(workHistoryEntrySchema),
   kvkkAccepted: z.literal(true, { error: "KVKK onayı zorunludur" }),
 })
 
 export type ApplicationFormData = z.infer<typeof applicationSchema>
 
-/** Referansları temizler, kısmi doldurma hatasını döner */
-export function prepareReferences(raw: ReferenceInput[]): {
-  references: ReferenceInput[]
+/** Çalışma geçmişini temizler, kısmi doldurma hatasını döner */
+export function prepareWorkHistory(raw: WorkHistoryInput[]): {
+  workHistory: WorkHistoryInput[]
   error: string | null
 } {
-  const sanitized = sanitizeReferences(raw)
-  const error = validateOptionalReferences(sanitized)
-  return { references: sanitized, error }
+  const sanitized = sanitizeWorkHistory(raw)
+  const error = validateOptionalWorkHistory(sanitized)
+  return { workHistory: sanitized, error }
 }

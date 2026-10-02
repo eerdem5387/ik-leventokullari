@@ -11,9 +11,8 @@ const FIELD_LABELS: Record<string, string> = {
   experienceLevels: "Deneyim kademeleri",
   totalExperience: "Toplam deneyim",
   hasPrivateSchoolExperience: "Özel okul deneyimi",
-  pedagogicalApproach: "Pedagojik yaklaşım",
   clubsAndActivities: "Kulüp / sosyal faaliyet",
-  references: "Referanslar",
+  workHistory: "Çalışma geçmişi",
   kvkkAccepted: "KVKK onayı",
 }
 
