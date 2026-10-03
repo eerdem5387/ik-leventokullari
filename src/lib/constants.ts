@@ -36,15 +36,24 @@ export const EXPERIENCE_OPTIONS = [
 export const PRIVATE_SCHOOL_OPTIONS = ["Evet", "Hayır"] as const
 
 export const CLUB_OPTIONS = [
-  "Akıl Oyunları",
-  "İspanyolca",
-  "Rusça",
-  "Korece",
-  "Çince",
-  "Yapay Zeka Destekli Animasyon Tasarımı",
-  "3D Programlama Tasarım",
-  "Oyun Programlama",
-  "Ardinyo",
+  "Bilişim",
+  "Akıl oyunları",
+  "Kodlama",
+  "Yazılım",
+  "Gastronomi",
+  "Satranç öğretimi",
+  "Dene-Yap",
+  "Robotik",
+  "Tübitak",
+  "AB Proje",
+  "Almanca",
+  "Fransızca",
+  "Piyano",
+  "Keman",
+  "Plastik sanatlar",
+  "Voleybol",
+  "Basketbol",
+  "Jimnastik",
 ] as const
 
 export const MAX_CV_BYTES = 5 * 1024 * 1024 // 5 MB
