@@ -49,7 +49,7 @@ export const applicationSchema = z.object({
   }),
   clubsAndActivities: z
     .array(z.enum(CLUB_OPTIONS))
-    .min(1, "En az bir kulüp veya sosyal faaliyet seçin"),
+    .min(2, "En az iki kulüp veya sosyal faaliyet seçin"),
   workHistory: z.array(workHistoryEntrySchema),
   kvkkAccepted: z.literal(true, { error: "KVKK onayı zorunludur" }),
 })

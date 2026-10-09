@@ -102,10 +102,10 @@ export function ApplicationForm() {
       return
     }
 
-    if (clubsAndActivities.length === 0) {
+    if (clubsAndActivities.length < 2) {
       setOverlay({
         type: "error",
-        message: "En az bir kulüp veya sosyal faaliyet seçmelisiniz.",
+        message: "En az iki kulüp veya sosyal faaliyet seçmelisiniz.",
       })
       return
     }
@@ -467,7 +467,7 @@ export function ApplicationForm() {
           disabled={
             overlay?.type === "loading" ||
             experienceLevels.length === 0 ||
-            clubsAndActivities.length === 0
+            clubsAndActivities.length < 2
           }
           className="w-full rounded-xl bg-[#1e3a5f] px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-[#152a45] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[240px]"
         >
